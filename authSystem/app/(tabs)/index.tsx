@@ -1,61 +1,98 @@
 import { router } from 'expo-router';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
-export default function App() {
+import { auth } from '@/constants/firebase';
 
+export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handelLogin = () =>{
-        alert(`Email: ${email} \nPassword: ${password}`)
+    const handleLogin = async () => {
+        if (!email.trim() || !password.trim()) {
+            alert('Please fill in all fields!');
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            alert('Please enter a valid email address!');
+            return;
+        }
+
+        try {
+          setLoading(true);
+          
+          // ফায়ারবেস দিয়ে লগইন করার অফিশিয়াল মেথড
+          await signInWithEmailAndPassword(auth, email, password);
+          
+          alert('Login Successful!');
+          router.replace('/explore'); // লগইন সফল হলে explore পেজে নিয়ে যাবে
+          
+        } catch (error) {
+              console.error(error);
+              // ফায়ারবেসের নির্দিষ্ট এরর হ্যান্ডেলিং
+              const authError = error as { code?: string; message?: string };
+              if (authError.code === 'auth/invalid-credential' || authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
+                  alert('Invalid email or password. Please try again!');
+              } else {
+                  alert(authError.message ?? 'An unexpected error occurred.');
+              }
+        } finally {
+            setLoading(false);
+        } 
     };
 
     return (
-
     <SafeAreaProvider>
       <SafeAreaView style={styles.SafeArea}>
         <View style={styles.container}>
-          <Text style={styles.textLogin}>Register</Text>
+          <Text style={styles.textLogin}>Login</Text>
 
-          <Text style={styles.text}>Email:</Text>
-          <TextInput
-            style={styles.input}
-            placeholder='Enter Email'
-            autoCapitalize='none'
-            value={email}
-            onChangeText={(text) => setEmail(text)}
+          <View style={styles.formGroup}>
+            <Text style={styles.text}>Email:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='Enter Email'
+              placeholderTextColor="#64748b"
+              autoCapitalize='none'
+              value={email}
+              onChangeText={(text) => setEmail(text)}
+              editable={!loading}
+            />
+          </View>
 
-          
-          />
+          <View style={styles.formGroup}>
+            <Text style={styles.text}>Password:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='Enter password'
+              placeholderTextColor="#64748b"
+              autoCapitalize='none'
+              secureTextEntry={true}
+              value={password}
+              onChangeText={(text) => setPassword(text)}
+              editable={!loading}
+            />
+          </View>
 
-          <Text style={styles.text}>Password:</Text>
-          <TextInput
-            style={styles.input}
-            placeholder='Enter password'
-            autoCapitalize='none'
-            secureTextEntry={true}
-
-            value={password}
-            onChangeText={(text) => setPassword(text)}
-
-          
-          />
-
-          <Pressable style={styles.loginbtn} onPress={handelLogin}>
-            <Text style={styles.btnTxt}>Login</Text>
-
+          <Pressable style={styles.loginbtn} onPress={handleLogin} disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color="#0f172a" />
+            ) : (
+              <Text style={styles.btnTxt}>Login</Text>
+            )}
           </Pressable>
 
-          <Pressable style={styles.regLink}
-          onPress={() => router.push('/register')}
-          
+          <Pressable 
+            style={styles.linkContainer}
+            onPress={() => router.push('/register')}
+            disabled={loading}
           >
-            <Text>Do not have account? Register</Text>
-
+            <Text style={styles.registerLink}>Don&apos;t have an account? Register</Text>
           </Pressable>
-
 
         </View>
       </SafeAreaView>
@@ -66,63 +103,62 @@ export default function App() {
 const styles = StyleSheet.create({
   SafeArea: {
     flex: 1,
-    backgroundColor: '#0f172a', // নচ বা স্ট্যাটাস বারের ব্যাকগ্রাউন্ড কালার মেইনটেইন করবে
+    backgroundColor: '#0f172a',
   },
-  input:{
-    width: '100%',
-    backgroundColor: '#ffffff',
-    padding: 10,
-    justifyContent:"center",
-    alignItems:"center",
-  },
-
-  regLink: {
-    backgroundColor: '#f8f538',
-    fontSize: 16,
-    textDecorationLine: 'underline',
-
-  },
-
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
-    paddingHorizontal: 25, // স্ক্রিনের দুই পাশে সুন্দর একটা খালি জায়গা (গ্যাপ) রাখবে
-    paddingTop: 20,        // নচ থেকে ঠিক কতটুকু নিচে লেখা শুরু হবে তা নিয়ন্ত্রণ করবে
-    alignItems: 'center', // লেখাগুলোকে বাম দিকে (Left Align) রাখার জন্য (মাঝখানে নিতে চাইলে 'center' দিন)
-    
+    paddingHorizontal: 25, 
+    paddingTop: 60,        
+    alignItems: 'center', 
   },
-
   textLogin: {
     color: '#f8a538',
     fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 10, // Login লেখার নিচে একটু ফাঁকা জায়গা তৈরি করবে
-    alignItems:'center'
+    marginBottom: 40, 
   },
-
+  formGroup: {
+    width: '80%', 
+    marginBottom: 20,
+  },
   text: {
     color: '#f8a538',
-    fontSize: 16,
-    alignSelf: 'flex-start', // লেবেলগুলোকে বাম পাশে সুন্দর করে সাজানোর জন্য
-    marginBottom: 5,
+    fontSize: 14,
+    fontWeight: '600',
+    alignSelf: 'flex-start', 
+    marginBottom: 6,
   },
-  loginbtn:{
-    width:'100%',
+  input: {
+    width: '100%', 
+    backgroundColor: '#1e293b',
+    color: '#ffffff',
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    marginTop: 10,
-    elevation: 3,
-    backgroundColor:'#FF00FF',
-    padding: 4
-    
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
-
-  btnTxt:{
-        color: '#0f172a',
-    fontSize: 18,
+  loginbtn: {
+    width: '80%',
+    backgroundColor: '#FF00FF',
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginTop: 15,
+    alignItems: 'center',
+    elevation: 3, 
+  },
+  btnTxt: {
+    color: '#0f172a',
+    fontSize: 16,
     fontWeight: 'bold',
-    justifyContent:'center',
-    alignItems:'center',
-    boxShadow: '2',
-    textAlign:'center'
-  }
+  },
+  linkContainer: {
+    marginTop: 25, 
+  },
+  registerLink: {
+    color: '#38bdf8', 
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline', 
+  },
 });
