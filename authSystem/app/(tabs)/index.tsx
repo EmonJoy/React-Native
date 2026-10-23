@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+
 import { auth } from '@/constants/firebase';
+
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -28,8 +30,8 @@ export default function LoginScreen() {
           // ফায়ারবেস দিয়ে লগইন করার অফিশিয়াল মেথড
           await signInWithEmailAndPassword(auth, email, password);
           
-          alert('Login Successful!');
-          router.replace('/explore'); // লগইন সফল হলে explore পেজে নিয়ে যাবে
+          
+          router.replace('/dashboard'); // লগইন সফল হলে dashboard পেজে নিয়ে যাবে
           
         } catch (error) {
               console.error(error);
